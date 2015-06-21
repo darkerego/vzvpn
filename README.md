@@ -5,4 +5,4 @@ configuration. By default the script will configure rules for OpenVPN to functio
 
 # License
 
-Feel free to use, modify, redistribute, or otherwise do whatever you want with this script. I only ask that you give the authors credit, as per the GPL licenes. 
+Feel free to use, modify, redistribute, or otherwise do whatever you want with this script. I only ask that you give the authors credit, as per the GPL. 
