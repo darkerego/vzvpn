@@ -39,12 +39,13 @@ staticIP="x.x.x.x" # Limit SSH to one static IP
 #### Log Messages ####
 logSSI="Dropped Incoming source spoof!"
 logSSO="Dropped Outgoing soure spoof!"
+logSSP="Dropped Spoofed Private Adrs!"
 logDNSC="Dropped invalid from dnscrypt!"
 logFW="Invalid FWD packet"
 logIO="Dropped incoming on $OUTIP"
-logTMS="Transmission-Daemon"
-loghttp="Dropped invalid apache"
-logHNY="Honey Pot Break?"
+logTMS="Illegal:Transmission-Daemon"
+loghttp="Illegal:apache"
+logHNY="CHECK HONEYPOT!"
 logUNPN="UPNP Traffic"
 ########################
 # Allow local connections
@@ -186,6 +187,17 @@ $IPT -A FORWARD -s $VPN_SN -j ACCEPT
 $IPT -A FORWARD -j LOG --log-prefix "$logFW"
 $IPT -A FORWARD -j REJECT
 $IPT -t nat -A POSTROUTING  -s $VPN_SN -o venet0 -j SNAT --to-source $OUTIP
+#### Block Private Address Source Spoofing ####
+iptables -A INPUT -i venet0 -s 127.0.0.0/8 -j LOG --log-prefix "$logSSP"
+iptables -A INPUT -i venet0 -s 127.0.0.0/8 -j DROP
+iptables -A INPUT -i venet0 -s 10.0.0.0/8 --j LOG --log-prefix "$logSSP"
+iptables -A INPUT -i venet0 -s 10.0.0.0/8 --j DROP
+iptables -A INPUT -i venet0 -s 172.16.0.0/12 -j LOG --log-prefix "$logSSP"
+iptables -A INPUT -i venet0 -s 172.16.0.0/12 -j DROP
+iptables -A INPUT -i venet0 -s 192.168.0.0/16 -j LOG --log-prefix "$logSSP"
+iptables -A INPUT -i venet0 -s 192.168.0.0/16 -j DROP
+iptables -A INPUT -i venet0 -s 224.0.0.0/3 -j LOG --log-prefix "$logSSP"
+iptables -A INPUT -i venet0 -s 224.0.0.0/3 -j DROP
 # Drop incoming traffic on outgoing IP 
 $IPT -A INPUT -i venet0 -d $OUTIP -j LOG --log-level 4 --log-prefix "$logIO"
 $IPT -A INPUT -i venet0 -d $OUTIP -j DROP
