@@ -32,7 +32,7 @@ fi
 	service1="" # some other ports
 	service2="" 
 	localSN='192.168.1.1/24'
-#vpnSVR2=94.156.77.219
+
 #And interface (usually tun0 or tap0)
 	vpnITF=tun+
 #Flush our current chains:
