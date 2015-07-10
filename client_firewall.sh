@@ -21,11 +21,11 @@ fi
 # Variables
 	vpnPRT=65432
 	vpnSSH=33567
-	vpnSVR=87.121.52.251
-	vpnCLI=10.99.0.4
-	tunSVR=10.99.0.1
-	DNS_1=77.66.84.233
-	DNS_2=176.56.237.171
+	vpnSVR=1.2.3.4
+	vpnCLI=10.9.0.1
+	tunSVR=10.9.0.1
+	DNS_1=208.67.222.222
+	DNS_2=208.67.220.220
 	transPRT=51431
 	domain=53
 	http=80
