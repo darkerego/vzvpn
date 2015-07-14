@@ -1,8 +1,8 @@
+#!/bin/bash
 # This is a firewall for clients of your OpenVZ/OpenVPN server. It is made to intergrate easily
 # with the Debian/Ubuntu UFW. After running this, you can use UFW to open/close ports at will.
 # Credit to Cyberbiz for the original template. Modified by Darkerego for the reasons above.
 # Do whatever, just give us credit.
-#!/bin/bash
 # Need root!
 if [[ $EUID -ne 0 ]]; then
 echo "Got root..?"
