@@ -34,7 +34,7 @@ localDNS=192.168.253.1
 #And interface (usually tun0 or tap0)
 vpnITF=tun0
 wfITF=wlan0
-$ethIF=eth0
+ethIF=eth0
 #Flush our current chains:
 #
 $IPT -F
