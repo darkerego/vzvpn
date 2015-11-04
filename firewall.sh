@@ -1,6 +1,6 @@
 #!/bin/bash
 # A linux iptables script for openvpn servers running inside openvz containers with restricted kernels, 
-# with multiple IP addresses, OpenVPN, dnscrypt-proxy to server the clients, and maybe some other VPN reachable
+# with multiple IP addresses, OpenVPN, dnscrypt-proxy to serve the vpn clients, and perhaps some other VPN reachable
 # services. Inside openvz CT's we cannot referance interfaces like a physical server (ie: '-i eth1')
 # so intead we use -i venet0 -d your.ip.addrs.here, we also use source routing instead of masquerading.
 # Thanks to Cyberbiz/nixCraft for the original fw template!
