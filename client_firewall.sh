@@ -1,131 +1,28 @@
 #!/bin/bash
-# This is a firewall for clients of your OpenVZ/OpenVPN server. It is made to intergrate easily
-# with the Debian/Ubuntu UFW. After running this, you can use UFW to open/close ports at will.
-# Credit to Cyberbiz for the original template. Modified by Darkerego for the reasons above.
-# Do whatever, just give us credit.
-# Need root!
-if [[ $EUID -ne 0 ]]; then
-echo "Got root..?"
-exit 1
+###########################
+# Prevent vpn leaks - requires ufw 
+if [[ "id -u" -ne "0" ]] ; then
+  echo This script must be ran as root.
+  exit 1
 fi
-# Constants
-IPT="/sbin/iptables"
-BlOCKLIST="blockedip"
-BLOCKMSG="BLOCKED IP DROP"
-# Log Messages
-logDNSC='invalid dnscrypt'
-logTMS='invalid transmission'
-logTUN='invalid vpn sever!'
-# Variables
-vpnPRT=51194
-vpnSSH=33222
-vpnSVR=1.2.3.4
-vpnCLI=10.9.0.4
-tunSVR=10.9.0.1
-DNS_1=208.67.222.222
-DNS_2=208.67.220.220
-transPRT=51431
-domain=53
-http=80
-transWEB=9777
-localSN='192.168.253.0/24'
-localDNS=192.168.253.1
-#service2=some_other_port
-#And interface (usually tun0 or tap0)
-vpnITF=tun0
-wfITF=wlan0
-ethIF=eth0
-#Flush our current chains:
-#
-$IPT -F
-$IPT -t nat -F
-$IPT -t mangle -F
-$IPT -X
-# Make sure UFW doesn't break anything
-ufw reset
-#Now for our UFW defaults:
-ufw default deny incoming
-ufw default deny outgoing
-echo "Defaults set..."
-## DNS Queries should pass to initiate the connection
-$IPT -A OUTPUT -i $ethIF -p tcp --dport 53 -d $localDNS -j ACCEPT
-$IPT -A OUTPUT -i $ethIF -p udp --dport 53 -d $localDNS -j ACCEPT
 
-##Only allow out to server on vpn port
-if [ -f '/root/scripts/blocked.ips' ];
-then
-## create a new iptables list
-$IPT -N $BLOCKLIST
-for ipblock in $BADIPS
-do
-$IPT -A $BLOCKLIST -s $ipblock -j LOG --log-prefix "$BLOCKMSG"
-$IPT -A $BLOCKLIST -s $ipblock -j DROP
-done
-$IPT -I INPUT -j $BLOCKLIST
-$IPT -I OUTPUT -j $BLOCKLIST
-$IPT -I FORWARD -j $BLOCKLIST
-fi
-# Transmission Peer Port
-tPP_EN=false
-##
-if [[ $tPP_EN == "true" ]]; then
-echo Warning: Transmission peer port open...
-####
-$IPT -A INPUT -i $vpnITF -p tcp --dport $transPRT -m state --state NEW,RELATED,ESTABLISHED -j ACCEPT
-$IPT -A INPUT -i $vpnITF -p udp --dport $transPRT -m state --state NEW,RELATED,ESTABLISHED -j ACCEPT
-else
-echo Not openening transmission peer port...
-fi
-echo Setting vpn rules...
-####Allow VPN
-$IPT -A OUTPUT -o $vpnITF -j ACCEPT
-$IPT -A OUTPUT -o $ethIF -p tcp -d $vpnSVR --dport $vpnPRT -j ACCEPT
-$IPT -A OUTPUT -o $ethIF -p udp -d $vpnSVR --dport $vpnPRT -j ACCEPT
-$IPT -A OUTPUT -o $wfITF -p tcp -d $vpnSVR --dport $vpnPRT -j ACCEPT
-$IPT -A OUTPUT -o $wfITF -p udp -d $vpnSVR --dport $vpnPRT -j ACCEPT
-$IPT -A OUTPUT -o $ethIF -p tcp -d $vpnSVR --dport $vpnSSH -j ACCEPT
-$IPT -A OUTPUT -o $wfITF -p tcp -d $vpnSVR --dport $vpnSSH -j ACCEPT
-echo Preventing transmission leaks...
-## Prevent Transmission Leaks
-$IPT -A OUTPUT -o $vpnITF -p tcp --dport $transPRT -j ACCEPT
-$IPT -A OUTPUT -o $vpnITF -p udp --dport $transPRT -j ACCEPT
-$IPT -A OUTPUT -o $ethIF -p tcp --dport $transPRT -j REJECT
-$IPT -A OUTPUT -o $ethIF -p udp --dport $transPRT -j REJECT
-$IPT -A OUTPUT -o $wfITF -p tcp --dport $transPRT -j REJECT
-$IPT -A OUTPUT -o $wfITF -p udp --dport $transPRT -j REJECT
-echo Setting dnscrypt rules...
-# Dnscrypt-proxy rules
-$IPT -A OUTPUT -p udp -m owner --uid-owner dnscrypt -d $DNS_1 --sport 1024:65535 --dport 443 -j ACCEPT
-$IPT -A OUTPUT -p udp -m owner --uid-owner dnscrypt -d $DNS_2 --sport 1024:65535 --dport 443 -j ACCEPT
-$IPT -A OUTPUT -m owner --uid-owner dnscrypt -j LOG --log-prefix '$logDNSC'
-$IPT -A OUTPUT -m owner --uid-owner dnscrypt -j REJECT
-echo Setting vpn-reachable services....
-# VPN Services we need to reach
-$IPT -A OUTPUT -o $vpnITF -s $vpnCLI -d $tunSVR -p udp --dport $domain -j ACCEPT
-$IPT -A OUTPUT -o $vpnITF -s $vpnCLI -d $tunSVR -p tcp --dport $http -j ACCEPT
-$IPT -A OUTPUT -o $vpnITF -s $vpnCLI -d $tunSVR -p tcp --dport $transWEB -j ACCEPT
-#$IPT -A OUTPUT -o $vpnITF -s $vpnCLI -d $tunSVR -p tcp --dport $service2 -j ACCEPT
-$IPT -A OUTPUT -o $vpnITF -s $vpnCLI -d $tunSVR -p tcp --dport $vpnSSH -j ACCEPT
-$IPT -A OUTPUT -o $vpnITF -d $tunSVR -j LOG --log-prefix='$logTUN'
-$IPT -A OUTPUT -o $vpnITF -d $tunSVR -j REJECT
-echo Setting private network settings...
-##Allow access to all private networks.
-$IPT -A OUTPUT -o $vpnITF -d $localSN -j REJECT
-$IPT -A OUTPUT -o $vpnITF -d $localSN -j REJECT
-$IPT -A OUTPUT -o $wfITF -d $localSN -j ACCEPT
-$IPT -A OUTPUT -o $ethIF -d $localSN -j ACCEPT
-echo Will now enable the fw...
-## Or let UFW handle it if you're less paranoid
-#ufw allow out to 192.168.0.0/16
-#ufw allow out to 172.16.0.0/12
-#ufw allow out to 10.0.0.0/8
-# Allow ipv4 muticast (If you need it)
-#ufw allow out to 224.0.0.0/24
-#ufw allow out to 239.0.0.0/8
-# Allow local ipv6
-#ufw allow out to ff01::/16
-#Finally, turn it on...
+
+vpn_host='your.vpnserver.com' # vpn server
+vpn_sn='10.8.0.0/24' # vpn subnet
+host_ssh='22' # vpn server ssh port 
+host_btn='54321' # what port your torrent client listens on
+
+
+
+ufw reset
+ufw default deny outgoing
+
+ufw allow out to $vpn_host
+ufw allow out on tun0
+ufw allow in on tun0 to any port $host_ssh proto tcp from $vpn_sn
+ufw allow in on tun0 to any port $host_btn proto tcp
+ufw allow in on tun0 to any port $host_btn proto udp
+
 ufw enable
-echo Enabled...
-ufw reload
-echo "Done!"
+ufw status verbose
+
